@@ -1,0 +1,300 @@
+<!DOCTYPE html> 
+<html lang="de">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Cyberpunk Portfolio</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@700&family=Share+Tech+Mono&display=swap');
+
+  :root {
+    --neon-pink: #FF00FF;
+    --neon-cyan: #00FFFF;
+    --neon-blue: #0FF;
+    --neon-purple: #8A2BE2;
+    --dark-bg: #121212;
+    --dark-bg-2: #222222;
+    --accent-yellow: #FFA500;
+    --glow-color: var(--neon-cyan);
+
+    --light-bg: #f0f0f0;
+    --light-text: #121212;
+    --light-accent: #8A2BE2;
+  }
+
+  /* Reset & Basics */
+  * {
+    box-sizing: border-box;
+    margin: 0; padding: 0;
+    font-family: 'Share Tech Mono', monospace;
+  }
+
+  body {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    background-color: var(--dark-bg);
+    color: var(--neon-cyan);
+    line-height: 1.6;
+    transition: background-color 0.5s, color 0.5s;
+    position: relative;
+    overflow-x: hidden;
+  }
+
+  /* Animierter Hintergrund */
+  body::before {
+    content: "";
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background:
+      linear-gradient(rgba(0,255,255,0.05) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(0,255,255,0.05) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none;
+    animation: gridmove 60s linear infinite;
+    z-index: 0;
+  }
+
+  @keyframes gridmove {
+    0% { background-position: 0 0, 0 0; }
+    100% { background-position: 40px 40px, 40px 40px; }
+  }
+
+  a {
+    color: var(--neon-pink);
+    text-decoration: none;
+    transition: 0.3s;
+  }
+
+  a:hover {
+    color: var(--accent-yellow);
+    text-shadow:
+      0 0 5px var(--accent-yellow),
+      0 0 10px var(--accent-yellow);
+  }
+
+  main {
+    flex-grow: 1;
+    padding: 2rem;
+    max-width: 1000px;
+    margin: 0 auto;
+    position: relative;
+    z-index: 1;
+  }
+
+  section {
+    margin-bottom: 4rem;
+    padding: 1.5rem 2rem;
+    border: 1px solid var(--neon-cyan);
+    box-shadow:
+      0 0 10px var(--neon-cyan);
+    border-radius: 10px;
+    background: linear-gradient(135deg, #1a1a1a, #111);
+    transition: background-color 0.5s, border-color 0.5s;
+  }
+
+  section h2 {
+    font-family: 'Orbitron', sans-serif;
+    color: var(--neon-purple);
+    margin-bottom: 1rem;
+    text-shadow: 0 0 7px var(--neon-purple);
+    font-size: 2rem;
+  }
+
+  /* Über Mich */
+  #about p {
+    font-size: 1.1rem;
+    max-width: 700px;
+  }
+
+  /* Streaming */
+  #streaming a.button {
+    display: inline-block;
+    padding: 0.7rem 1.5rem;
+    margin-top: 1rem;
+    background: var(--neon-pink);
+    color: black;
+    font-weight: 700;
+    border-radius: 5px;
+    box-shadow: 0 0 15px var(--neon-pink);
+    transition: 0.3s;
+  }
+
+  #streaming a.button:hover {
+    background: var(--accent-yellow);
+    color: black;
+    box-shadow: 0 0 20px var(--accent-yellow);
+  }
+
+  /* Embed Twitch Player */
+  #streaming iframe {
+    margin-top: 1rem;
+    border: none;
+    width: 100%;
+    height: 400px;
+    border-radius: 10px;
+    box-shadow: 0 0 20px var(--neon-cyan);
+    transition: filter 0.5s;
+  }
+
+  /* Darts */
+  #darts ul {
+    list-style: none;
+    padding-left: 0;
+    max-width: 700px;
+  }
+
+  #darts li {
+    padding: 0.5rem 0;
+    border-bottom: 1px solid var(--neon-blue);
+    font-size: 1.1rem;
+  }
+
+  /* Kontaktformular */
+  form {
+    max-width: 700px;
+    display: flex;
+    flex-direction: column;
+  }
+
+  form label {
+    margin: 1rem 0 0.5rem;
+    font-weight: 700;
+    color: var(--neon-pink);
+    text-shadow:
+      0 0 5px var(--neon-pink);
+  }
+
+  form input, form textarea {
+    background: transparent;
+    border: 2px solid var(--neon-cyan);
+    color: var(--neon-cyan);
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 1rem;
+    padding: 0.6rem;
+    border-radius: 5px;
+    box-shadow: 0 0 10px var(--neon-cyan);
+    transition: border-color 0.3s, box-shadow 0.3s;
+  }
+
+  form input:focus, form textarea:focus {
+    border-color: var(--neon-pink);
+    box-shadow:
+      0 0 15px var(--neon-pink);
+    outline: none;
+  }
+
+  form textarea {
+    resize: vertical;
+    min-height: 100px;
+  }
+
+  form button {
+    margin-top: 1.5rem;
+    padding: 0.8rem 1.5rem;
+    background: var(--neon-pink);
+    border: none;
+    color: black;
+    font-weight: 700;
+    font-size: 1.1rem;
+    border-radius: 5px;
+    cursor: pointer;
+    box-shadow: 0 0 15px var(--neon-pink);
+    transition: background-color 0.3s, box-shadow 0.3s;
+  }
+
+  form button:hover {
+    background: var(--accent-yellow);
+    box-shadow: 0 0 20px var(--accent-yellow);
+  }
+
+  /* Footer */
+  footer {
+    text-align: center;
+    padding: 1rem;
+    background: var(--dark-bg-2);
+    color: var(--neon-blue);
+    font-size: 0.9rem;
+    box-shadow: 0 0 10px var(--neon-blue);
+  }
+
+  /* Responsive */
+  @media (max-width: 600px) {
+    section h2 {
+      font-size: 1.6rem;
+    }
+
+    #streaming iframe {
+      height: 250px;
+    }
+  }
+
+</style>
+</head>
+<body>
+
+<main>
+  <section id="about">
+    <h2>Über Mich</h2>
+    <p>
+      Willkommen auf meiner Cyberpunk-Portfolio-Seite! Ich bin ein leidenschaftlicher Streamer und Darts-Spieler mit einem Faible für futuristische Neon-Designs und spannende Challenges. Hier findest du alles über mich, meine Streams und meine Darts-Aktivitäten.
+    </p>
+  </section>
+
+  <section id="streaming">
+    <h2>Streaming</h2>
+    <p>Ich streame regelmäßig spannende Games und Live-Events. Schau gerne vorbei und sei Teil der Community!</p>
+    <a class="button" href="https://twitch.tv/deinusername" target="_blank" rel="noopener noreferrer">Zum Twitch Kanal</a>
+
+    <!-- Twitch Embed -->
+    <iframe
+      src="https://player.twitch.tv/?channel=TheCyborg1993&parent=deinusername.github.io"
+      allowfullscreen
+      scrolling="no"
+      frameborder="0"
+    ></iframe>
+  </section>
+
+  <section id="darts">
+    <h2>Darts</h2>
+    <p>Meine Leidenschaft neben dem Streaming: Darts! Hier eine Übersicht meiner Aktivitäten und Turniere.</p>
+    <ul>
+      <li>Turnier 1: Cyberpunk Dart Open - 3. Platz</li>
+      <li>Turnier 2: Neon City Championship - Viertelfinale</li>
+      <li>Turnier 3: Online Dartliga Saison 2025 - Aktiver Spieler</li>
+    </ul>
+  </section>
+
+  <section id="contact">
+    <h2>Kontakt</h2>
+    <form id="contact-form">
+      <label for="name">Name</label>
+      <input type="text" id="name" name="name" required placeholder="Dein Name" />
+      
+      <label for="email">E-Mail</label>
+      <input type="email" id="email" name="email" required placeholder="deine@email.de" />
+      
+      <label for="message">Nachricht</label>
+      <textarea id="message" name="message" required placeholder="Deine Nachricht..."></textarea>
+      
+      <button type="submit">Absenden</button>
+    </form>
+  </section>
+</main>
+
+<footer>
+  © 2025 Dein Name – Cyberpunk Portfolio
+</footer>
+
+<script>
+  // Kontaktformular Frontend-Submit Demo (ohne Backend)
+  const form = document.getElementById('contact-form');
+  form.addEventListener('submit', e => {
+    e.preventDefault();
+    alert(`Danke für deine Nachricht, ${form.name.value}!`);
+    form.reset();
+  });
+</script>
+
+</body>
+</html>
