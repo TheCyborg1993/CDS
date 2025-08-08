@@ -1,0 +1,357 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Darts Statistik Overlay</title>
+  <link href="https://fonts.googleapis.com/css2?family=Exo+2:wght@400;600;700&display=swap" rel="stylesheet">
+  <style>
+    /* (CSS unverändert) */
+    html, body {
+      margin: 0;
+      padding: 0;
+      background: transparent;
+      font-family: 'Exo 2', sans-serif;
+      overflow: hidden;
+      color: #ffffff;
+      width: 100%;
+      height: 100%;
+    }
+
+    #statsGrid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(100px, 100px));
+      grid-template-rows: repeat(2, auto);
+      gap: 12px;
+      padding: 16px;
+      max-width: 480px;
+      margin: auto;
+    }
+
+    .stat-item {
+      background: rgba(0, 0, 0, 0.85);
+      border: 2px solid #6a2878;
+      border-radius: 10px;
+      padding: 14px;
+      box-shadow: 0 4px 12px rgba(255, 0, 60, 0);
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      text-align: center;
+    }
+
+    .label, .value {
+      text-align: center;
+      width: 100%;
+    }
+
+    .label {
+      font-size: 16px;
+      font-weight: 10px;
+      color: #6a2878;
+      margin-bottom: 8px;
+      text-shadow: 0 0 4px rgba(0, 0, 0, 0.8);
+    }
+
+    .value {
+      font-size: 24px;
+      font-weight: 350;
+      transition: color 0.6s ease;
+      color: #ffffff;
+      text-shadow: 0 0 6px rgba(0, 0, 0, 0.9);
+      display: inline-block;
+      font-feature-settings: "tnum";
+      font-variant-numeric: tabular-nums;
+      width: auto;
+    }
+
+    .value.animated {
+      color: #00ff88 !important;
+      transition: color 0.6s ease;
+    }
+
+    .daily-value {
+      /* Tageswerte komplett ausblenden */
+      display: none !important;
+      font-size: 16px;
+      font-weight: 600;
+      margin-top: 4px;
+      opacity: 0.85;
+      text-shadow: none;
+      transition: color 0.5s ease, opacity 0.5s ease, text-shadow 0.5s ease;
+    }
+
+    @media (max-width: 350px) {
+      #statsGrid {
+        grid-template-columns: repeat(2, 1fr);
+        max-width: 200px;
+      }
+
+      .label {
+        font-size: 16px;
+      }
+
+      .value {
+        font-size: 24px;
+      }
+
+      .daily-value {
+        font-size: 14px;
+      }
+    }
+
+    @media (max-width: 480px) {
+      .label {
+        font-size: 15px;
+      }
+
+      .value {
+        font-size: 20px;
+      }
+
+      .daily-value {
+        font-size: 15px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div id="statsGrid"></div>
+
+  <script>
+    const sheetID = '1nWVPbDZtdXbuYn2WuqcW2SHmcDiyQWbxjNUBsJp_2Ps';
+    const apiKey = 'AIzaSyBfN9q6lVF1zl656DXh_jInjrnJ8CCxGZI';
+
+    const overviewUrl = `https://sheets.googleapis.com/v4/spreadsheets/${sheetID}/values/Übersicht!A2:H50?key=${apiKey}`;
+    const referenceUrl = `https://sheets.googleapis.com/v4/spreadsheets/${sheetID}/values/Übersicht!H2:H9?key=${apiKey}`;
+    // Tageswerte jetzt aus Übersicht!I2:I9 (statt vorher Tages_Stats!J3:R100)
+    const dailyStatsUrl = `https://sheets.googleapis.com/v4/spreadsheets/${sheetID}/values/Übersicht!I2:I9?key=${apiKey}`;
+
+    const currentValues = {};
+    const EPSILON = 0.01; // kleine Toleranz für "gleich"
+
+    function lerpColor(colorA, colorB, t) {
+      const cA = {
+        r: parseInt(colorA.substr(1,2),16),
+        g: parseInt(colorA.substr(3,2),16),
+        b: parseInt(colorA.substr(5,2),16)
+      };
+      const cB = {
+        r: parseInt(colorB.substr(1,2),16),
+        g: parseInt(colorB.substr(3,2),16),
+        b: parseInt(colorB.substr(5,2),16)
+      };
+      const r = Math.round(cA.r + (cB.r - cA.r) * t);
+      const g = Math.round(cA.g + (cB.g - cA.g) * t);
+      const b = Math.round(cA.b + (cB.b - cA.b) * t);
+      return `rgb(${r},${g},${b})`;
+    }
+
+    const COLOR_BAD = '#ff5555';    // Rot
+    const COLOR_EQUAL = '#ffcc00';  // Gelb
+    const COLOR_GOOD = '#00ff88';   // Grün
+
+    function colorByValue(key, valueStr) {
+      const val = parseFloat(valueStr.replace('%', '').replace(',', '.'));
+      if (isNaN(val)) return '#ffffff';
+      switch (key) {
+        case "AVG":       return val < 40 ? '#ff4d4d' : val < 50 ? '#ffcc00' : '#00ff88';
+        case "First 9":   return val < 50 ? '#ff4d4d' : val < 60 ? '#ffcc00' : '#00ff88';
+        case "Doppel":    return val < 10 ? '#ff4d4d' : val < 15 ? '#ffcc00' : '#00ff88';
+        default:          return '#ffffff';
+      }
+    }
+
+    function formatValue(el, val) {
+      if (el.dataset.isPercent === "true") return val.toFixed(2).replace('.', ',') + '%';
+      if (el.dataset.isInteger === "true") return Math.round(val);
+      return val.toFixed(2).replace('.', ',');
+    }
+
+    function animateValue(el, start, end, duration = 300) {
+      const startTime = performance.now();
+      function step(now) {
+        const progress = Math.min((now - startTime) / duration, 1);
+        const value = start + (end - start) * progress;
+        el.textContent = formatValue(el, value);
+        if (progress < 1) requestAnimationFrame(step);
+      }
+      requestAnimationFrame(step);
+    }
+
+    // Neuer Farbverlauf: gelb wenn exakt gleich, ansonsten linear rot->gelb (schlechter) oder gelb->grün (besser)
+    function getDailyColor(dailyValNum, refValNum) {
+      if (isNaN(dailyValNum) || isNaN(refValNum)) return '#ffffff';
+
+      const diff = dailyValNum - refValNum;
+      const range = 0.1 * refValNum; // 10% range
+
+      // Exakt gleich (innerhalb EPSILON)
+      if (Math.abs(diff) <= EPSILON) return COLOR_EQUAL;
+
+      if (diff < 0) {
+        // schlechter: rot->gelb
+        let t = diff / -range;
+        if (t > 1) t = 1;
+        if (t < 0) t = 0;
+        return lerpColor(COLOR_BAD, COLOR_EQUAL, t);
+      } else {
+        // besser: gelb->grün
+        let t = diff / range;
+        if (t > 1) t = 1;
+        if (t < 0) t = 0;
+        return lerpColor(COLOR_EQUAL, COLOR_GOOD, t);
+      }
+    }
+
+    async function renderCombined() {
+      try {
+        const [overviewRes, dailyRes, referenceRes] = await Promise.all([
+          fetch(overviewUrl),
+          fetch(dailyStatsUrl),
+          fetch(referenceUrl)
+        ]);
+
+        const overviewJson = await overviewRes.json();
+        const dailyJson = await dailyRes.json();
+        const referenceJson = await referenceRes.json();
+
+        const overviewValues = overviewJson.values || [];
+        const dailyValues = dailyJson.values || [];
+        const referenceValues = (referenceJson.values || []).flat().map(v => parseFloat(v.replace(',', '.')));
+
+        const dataOverview = {};
+
+        for (let i = 0; i < overviewValues.length; i++) {
+          const row = overviewValues[i];
+          if (row.length >= 8) {
+            let label = row[0].trim();
+            let valRaw = row[7].trim();
+            let val = valRaw;
+
+            if (label === 'AVG' || label === 'First 9') {
+              let num = parseFloat(valRaw.replace(',', '.'));
+              val = !isNaN(num) ? num.toFixed(2).replace('.', ',') : '—';
+            } else if (label === 'Doppel') {
+              let num = parseFloat(valRaw.replace(',', '.'));
+              if (!isNaN(num)) {
+                if (num <= 1) num *= 100;
+                val = num.toFixed(2).replace('.', ',');
+              } else val = '—';
+            }
+            dataOverview[label] = val;
+          }
+        }
+
+        const keys = ["AVG", "First 9", "Doppel", "100+", "140+", "180", "Short Leg", "Highfinish"];
+        const valuesToday = keys.map((key, i) => {
+          const valRaw = dailyValues[i] ? dailyValues[i][0] : '—';
+          const valNum = parseFloat(valRaw.replace(',', '.'));
+          const refVal = referenceValues[i];
+          return {
+            label: key,
+            value: valRaw,
+            numericValue: isNaN(valNum) ? NaN : valNum,
+            refValue: refVal
+          };
+        });
+
+        const container = document.getElementById('statsGrid');
+        container.innerHTML = '';
+
+        for (let i = 0; i < keys.length; i++) {
+          const key = keys[i];
+          const overallRaw = dataOverview[key] || '—';
+
+          const item = document.createElement('div');
+          item.className = 'stat-item';
+
+          const label = document.createElement('div');
+          label.className = 'label';
+          label.textContent = key;
+
+          const value = document.createElement('div');
+          value.className = 'value';
+
+          let prev = currentValues[key];
+          let prevNum = 0, newNum = 0;
+          let isPercent = false, isInteger = false;
+
+          if (overallRaw === '—') {
+            value.textContent = overallRaw;
+          } else {
+            if (key === "Doppel") {
+              isPercent = true;
+              newNum = parseFloat(overallRaw.replace(',', '.'));
+              if (newNum <= 1) newNum *= 100;
+              prevNum = prev ? parseFloat(prev.replace(',', '.')) : 0;
+            } else if (["100+", "140+", "180", "Short Leg", "Highfinish"].includes(key)) {
+              isInteger = true;
+              newNum = parseInt(overallRaw);
+              prevNum = prev ? parseInt(prev) : 0;
+            } else {
+              newNum = parseFloat(overallRaw.replace(',', '.'));
+              prevNum = prev ? parseFloat(prev.replace(',', '.')) : 0;
+            }
+
+            value.dataset.isPercent = isPercent;
+            value.dataset.isInteger = isInteger;
+
+            if (newNum !== prevNum) {
+              animateValue(value, prevNum, newNum);
+              value.classList.add('animated');
+              setTimeout(() => {
+                value.classList.remove('animated');
+                value.style.color = colorByValue(key, overallRaw);
+              }, 600);
+            } else {
+              value.textContent = formatValue(value, newNum);
+              value.style.color = colorByValue(key, overallRaw);
+            }
+          }
+
+          currentValues[key] = overallRaw;
+
+          // Tageswert (wird durch CSS ausgeblendet)
+          const dailyValueDiv = document.createElement('div');
+          dailyValueDiv.className = 'daily-value';
+
+          const dailyValRaw = valuesToday[i].value;
+          let displayDailyVal = dailyValRaw;
+
+          if (key === "Doppel") {
+            let num = parseFloat(dailyValRaw.replace(',', '.'));
+            if (!isNaN(num)) {
+              if (num <= 1) num *= 100;
+              displayDailyVal = num.toFixed(2).replace('.', ',') + '%';
+            } else {
+              displayDailyVal = '—';
+            }
+          }
+
+          dailyValueDiv.textContent = displayDailyVal;
+
+          const dailyValNum = valuesToday[i].numericValue;
+          const refValNum = valuesToday[i].refValue;
+
+          dailyValueDiv.style.color = getDailyColor(dailyValNum, refValNum);
+
+          item.appendChild(label);
+          item.appendChild(value);
+          item.appendChild(dailyValueDiv);
+
+          container.appendChild(item);
+        }
+      } catch (e) {
+        console.error('Fehler beim Laden der Daten:', e);
+      }
+    }
+
+    window.addEventListener('load', () => {
+      renderCombined();
+      setInterval(renderCombined, 10000);
+    });
+  </script>
+</body>
+</html>
