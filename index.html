@@ -72,6 +72,8 @@
     }
 
     .daily-value {
+      /* Tageswerte komplett ausblenden */
+      display: none !important;
       font-size: 16px;
       font-weight: 600;
       margin-top: 4px;
@@ -242,9 +244,6 @@
           }
         }
 
-        // Tageswerte (neu aus Übersicht!I2:I9)
-        // dailyValues ist ein 2D-Array mit nur einer Spalte (I2:I9)
-        // Mapping: 8 Werte in fixem Key-Array ["AVG", "First 9", "Doppel", "100+", "140+", "180", "Short Leg", "Highfinish"]
         const keys = ["AVG", "First 9", "Doppel", "100+", "140+", "180", "Short Leg", "Highfinish"];
         const valuesToday = keys.map((key, i) => {
           const valRaw = dailyValues[i] ? dailyValues[i][0] : '—';
@@ -314,14 +313,13 @@
 
           currentValues[key] = overallRaw;
 
-          // Tageswert (unter Overall Wert, kleiner und mit Farbverlauf)
+          // Tageswert (wird durch CSS ausgeblendet)
           const dailyValueDiv = document.createElement('div');
           dailyValueDiv.className = 'daily-value';
 
           const dailyValRaw = valuesToday[i].value;
           let displayDailyVal = dailyValRaw;
 
-          // Für Doppel als Prozent anzeigen:
           if (key === "Doppel") {
             let num = parseFloat(dailyValRaw.replace(',', '.'));
             if (!isNaN(num)) {
